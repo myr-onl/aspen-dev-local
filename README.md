@@ -1,6 +1,6 @@
 # Aspen Discovery — Local Dev Environment
 
-A Docker Compose setup for developing Aspen locally against an external ILS.
+A Docker Compose setup for developing [Aspen Discovery](https://github.com/Aspen-Discovery/aspen-discovery) locally against an external ILS.
 Built on top of the prod `docker/` setup in the main repo, with two changes:
 
 1. Your local clone is **bind-mounted** over `/usr/local/aspen-discovery` — edits in
