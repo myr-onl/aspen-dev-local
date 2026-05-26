@@ -3,15 +3,13 @@
 A Docker Compose setup for developing [Aspen Discovery](https://github.com/Aspen-Discovery/aspen-discovery) locally against an external ILS.
 Built on top of the prod `docker/` setup in the main repo, with two changes:
 
-1. Your local clone is **bind-mounted** over `/usr/local/aspen-discovery` — edits in
+1. Your local clone is **bind-mounted** over `/usr/local/aspen-discovery`, meaning edits in
    your IDE are live instantly, no rebuild needed.
 2. Optional **Xdebug** support via `host.docker.internal`.
 
----
-
 ## Directory structure
 
-Place this folder next to your cloned repo:
+Place this folder next to your cloned repo. For example:
 
 ```
 ~/Git/
@@ -30,8 +28,6 @@ Place this folder next to your cloned repo:
         data/             ← covers, MARC, uploads, etc.
         logs/             ← Apache + Aspen logs
 ```
-
----
 
 ## First-time setup
 
@@ -95,8 +91,6 @@ If you're starting fresh, you need to do four things in the Aspen admin UI in or
 
 Once the module is enabled, the background process manager runs every 5 minutes via cron and will start the indexer automatically. 
 
----
-
 ## Daily use
 
 ```bash
@@ -131,7 +125,6 @@ Code changes to PHP/JS/templates are live immediately. No restart needed.
 - Username / Password: your `DATABASE_USER` / `DATABASE_PASSWORD`
 - Database: `aspen`
 
----
 
 ## Enabling Xdebug
 
@@ -150,7 +143,6 @@ docker compose up -d --force-recreate backend
 
 To disable, set `XDEBUG_ENABLE=false` and force-recreate again. The extension stays installed in the image but goes inactive.
 
----
 
 ## Rebuilding images
 
