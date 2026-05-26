@@ -1,0 +1,171 @@
+networks:
+  aspendev:
+
+volumes:
+  solr:
+  db-data:
+
+services:
+  # ---------------------------------------------------------------------------
+  # BASE IMAGE BUILD — builds the main Aspen image from your local repo.
+  # Not a running service; exists so the base image gets built before Dockerfile.dev.
+  # ---------------------------------------------------------------------------
+  base:
+    build:
+      context: ${ASPEN_REPO_PATH:?Set ASPEN_REPO_PATH in .env}
+      dockerfile: docker/Dockerfile
+    image: aspen-dev-local-base
+    profiles:
+      - build-only
+
+  # ---------------------------------------------------------------------------
+  # BACKEND — PHP-FPM
+  # Extends base image with xdebug, then bind-mounts your local repo.
+  # Xdebug is installed but only activated when XDEBUG_ENABLE=true in .env.
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: aspen-dev-local
+    env_file: .env
+    environment:
+      - XDEBUG_ENABLE=${XDEBUG_ENABLE:-false}
+      - XDEBUG_CLIENT_HOST=${XDEBUG_CLIENT_HOST:-host.docker.internal}
+      - XDEBUG_CLIENT_PORT=${XDEBUG_CLIENT_PORT:-9003}
+    networks:
+      - aspendev
+    tty: true
+    entrypoint: ["/dev-init.sh"]
+    volumes:
+      - ${ASPEN_REPO_PATH}:/usr/local/aspen-discovery
+      - ${ASPEN_HOME:-./sites}/${SITE_NAME}/conf:/usr/local/aspen-discovery/sites/${SITE_NAME}
+      - ${ASPEN_HOME:-./sites}/${SITE_NAME}/data:/data/aspen-discovery/${SITE_NAME}
+      - ${ASPEN_HOME:-./sites}/${SITE_NAME}/logs:/var/log/aspen-discovery/${SITE_NAME}
+      - ./dev-init.sh:/dev-init.sh:ro
+      - ./xdebug.ini:/etc/php/8.4/mods-available/xdebug.ini:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # APACHE — web server, proxies PHP to backend via FPM
+  # ---------------------------------------------------------------------------
+  apache:
+    image: aspen-dev-local
+    env_file: .env
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    networks:
+      - aspendev
+    volumes:
+      - ${ASPEN_REPO_PATH}:/usr/local/aspen-discovery
+      - ${ASPEN_HOME:-./sites}/${SITE_NAME}/conf:/usr/local/aspen-discovery/sites/${SITE_NAME}
+      - ${ASPEN_HOME:-./sites}/${SITE_NAME}/data:/data/aspen-discovery/${SITE_NAME}
+      - ${ASPEN_HOME:-./sites}/${SITE_NAME}/logs:/var/log/aspen-discovery/${SITE_NAME}
+    command:
+      - apache
+    depends_on:
+      - backend
+    tty: true
+
+  # ---------------------------------------------------------------------------
+  # CRON — background indexing and maintenance tasks
+  # ---------------------------------------------------------------------------
+  cron:
+    image: aspen-dev-local
+    env_file: .env
+    networks:
+      aspendev:
+        aliases:
+          - ${SITE_NAME}
+    tty: true
+    volumes:
+      - ${ASPEN_REPO_PATH}:/usr/local/aspen-discovery
+      - ${ASPEN_HOME:-./sites}/${SITE_NAME}/conf:/usr/local/aspen-discovery/sites/${SITE_NAME}
+      - ${ASPEN_HOME:-./sites}/${SITE_NAME}/data:/data/aspen-discovery/${SITE_NAME}
+      - ${ASPEN_HOME:-./sites}/${SITE_NAME}/logs:/var/log/aspen-discovery/${SITE_NAME}
+    command:
+      - cron
+    depends_on:
+      - backend
+      - apache
+
+  # ---------------------------------------------------------------------------
+  # MARIADB
+  # ---------------------------------------------------------------------------
+  db:
+    image: ${MARIADB_IMAGE:-mariadb:11.8}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - MARIADB_ROOT_PASSWORD=${DATABASE_ROOT_PASSWORD:-root}
+      - MARIADB_USER=${DATABASE_USER:-aspendev}
+      - MARIADB_PASSWORD=${DATABASE_PASSWORD:-aspendev}
+      - MARIADB_DATABASE=${DATABASE_NAME:-aspen}
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - aspendev
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized"]
+      interval: 5s
+      retries: 10
+
+  # ---------------------------------------------------------------------------
+  # ADMINER — lightweight database GUI
+  # Access at http://localhost:8080
+  # Server: db  |  User/Password: from your .env  |  Database: aspen
+  # ---------------------------------------------------------------------------
+  adminer:
+    image: adminer:latest
+    restart: unless-stopped
+    ports:
+      - "${DB_GUI_PORT:-8080}:8080"
+    networks:
+      - aspendev
+    depends_on:
+      - db
+
+  # ---------------------------------------------------------------------------
+  # SOLR — search index
+  # Named volume so index data survives container restarts.
+  # Admin UI at http://localhost:8983
+  # ---------------------------------------------------------------------------
+  solr:
+    build:
+      context: ${ASPEN_REPO_PATH}
+      dockerfile: docker/files/solr/Dockerfile
+    image: aspen-solr-local
+    env_file: .env
+    environment:
+      - SOLR_PORT=${SOLR_PORT:-8983}
+    ports:
+      - "${SOLR_PORT:-8983}:${SOLR_PORT:-8983}"
+    volumes:
+      - solr:/var/solr
+    networks:
+      - aspendev
+    entrypoint:
+      - /bin/bash
+      - '-c'
+      - |
+        init-var-solr
+        precreate-core series /opt/solr/server/solr/configsets/series
+        cp -r /opt/solr/server/solr/configsets/series/* series
+        precreate-core genealogy /opt/solr/server/solr/configsets/genealogy
+        cp -r /opt/solr/server/solr/configsets/genealogy/* genealogy
+        precreate-core grouped_works_v2 /opt/solr/server/solr/configsets/grouped_works_v2
+        cp -r /opt/solr/server/solr/configsets/grouped_works_v2/* grouped_works_v2
+        precreate-core lists /opt/solr/server/solr/configsets/lists
+        cp -r /opt/solr/server/solr/configsets/lists/* lists
+        precreate-core course_reserves /opt/solr/server/solr/configsets/course_reserves
+        cp -r /opt/solr/server/solr/configsets/course_reserves/* course_reserves
+        precreate-core open_archives /opt/solr/server/solr/configsets/open_archives
+        cp -r /opt/solr/server/solr/configsets/open_archives/* open_archives
+        precreate-core website_pages /opt/solr/server/solr/configsets/website_pages
+        cp -r /opt/solr/server/solr/configsets/website_pages/* website_pages
+        precreate-core events /opt/solr/server/solr/configsets/events
+        cp -r /opt/solr/server/solr/configsets/events/* events
+        chown -R solr:solr /var/solr
+        runuser -u solr -- solr-foreground

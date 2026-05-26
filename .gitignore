@@ -1,0 +1,26 @@
+# Ignore site configs
+sites/*
+!sites/example
+
+# Ignore local environment settings
+.env
+.env.local
+
+# Ignore folders from code editors
+.vscode
+.idea
+
+# Ignore temporary, cached, backup, and log files
+*.log
+*.tmp
+*.bak
+.cache/
+tmp/
+
+# Ignore macOS, Windows, and Linux files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+*~
+*.swp
+*.swo

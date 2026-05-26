@@ -1,0 +1,12 @@
+# Dockerfile.dev
+# Extends the main Aspen image with dev-only tooling.
+# The base image is built first from the main repo's docker/Dockerfile,
+# then this layer adds xdebug on top.
+# xdebug is installed here but only ACTIVATED when XDEBUG_ENABLE=true in .env
+# (handled by dev-init.sh at container startup).
+
+FROM aspen-dev-local-base
+
+RUN apt-get update \
+    && apt-get install -y php8.4-xdebug \
+    && rm -rf /var/lib/apt/lists/*
