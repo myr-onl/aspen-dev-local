@@ -5,6 +5,7 @@ sites/*
 # Ignore local environment settings
 .env
 .env.local
+docker-compose.override.yml
 
 # Ignore folders from code editors
 .vscode
