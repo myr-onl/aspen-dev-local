@@ -42,6 +42,7 @@ services:
       - ${ASPEN_HOME:-./sites}/${SITE_NAME}/conf:/usr/local/aspen-discovery/sites/${SITE_NAME}
       - ${ASPEN_HOME:-./sites}/${SITE_NAME}/data:/data/aspen-discovery/${SITE_NAME}
       - ${ASPEN_HOME:-./sites}/${SITE_NAME}/logs:/var/log/aspen-discovery/${SITE_NAME}
+      - ${ASPEN_HOME:-./sites}/${SITE_NAME}/data/files:/usr/local/aspen-discovery/code/web/files
       - ./dev-init.sh:/dev-init.sh:ro
       - ./xdebug.ini:/etc/php/8.4/mods-available/xdebug.ini:ro
     depends_on:
@@ -63,6 +64,7 @@ services:
       - ${ASPEN_HOME:-./sites}/${SITE_NAME}/conf:/usr/local/aspen-discovery/sites/${SITE_NAME}
       - ${ASPEN_HOME:-./sites}/${SITE_NAME}/data:/data/aspen-discovery/${SITE_NAME}
       - ${ASPEN_HOME:-./sites}/${SITE_NAME}/logs:/var/log/aspen-discovery/${SITE_NAME}
+      - ${ASPEN_HOME:-./sites}/${SITE_NAME}/data/files:/usr/local/aspen-discovery/code/web/files
     command:
       - apache
     depends_on:
