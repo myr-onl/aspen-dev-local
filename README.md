@@ -57,12 +57,12 @@ chmod +x build.sh
 ./build.sh
 ```
 
-This will build the base image, then the dev image on top, bring everything up, and tail the backend logs. Wait for: `Starting PHP-FPM in foreground mode...` before doing anything.
+This will build the base image, then the dev image on top, bring everything up, and tail the backend logs.
 
 > [!NOTE]
-> The first build can take a while (10–15 minutes on first run) because it downloads and compiles all component parts into the full Aspen image.
+> The first build can take a while (10–15 minutes on first run) because it downloads and compiles all component parts into the full Aspen image. Wait for `Starting PHP-FPM in foreground mode...` before doing anything.
 
-Then open **http://localhost** and log in with `aspen_admin`.
+Once finished, open **http://localhost** and log in with `aspen_admin`.
 
 ### 3. Connect your ILS
 
@@ -90,8 +90,6 @@ If you're starting fresh, you need to do four things in the Aspen admin UI:
 The background process manager runs every 5 minutes via cron and will start the indexer automatically.
 
 ## Daily use
-> [!TIP]
-> Code changes should be live immediately on save. No restart or rebuild needed.
 
 ### Start
 ```bash
@@ -113,6 +111,9 @@ docker compose logs -f cron
 ```bash
 docker compose exec backend bash
 ```
+
+> [!TIP]
+> Code changes should be live immediately on save. No restart or rebuild needed.
 
 ## Services & ports
 
