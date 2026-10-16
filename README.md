@@ -122,15 +122,7 @@ docker compose exec backend bash
 | Service | Description            | Port variable | Default URL           |
 |---------|------------------------|---------------|-----------------------|
 | Aspen   | Main UI                | `HTTP_PORT`   | http://localhost      |
-| Adminer | Database GUI           | `DB_GUI_PORT` | http://localhost:8080 |
 | Solr    | Search admin dashboard | `SOLR_PORT`   | http://localhost:8983 |
-
-**Adminer login:**
-- Server: `db`
-- Username: `DATABASE_USER`
-- Password: `DATABASE_PASSWORD`
-- Database: `aspen`
-
 
 ## Enabling Xdebug
 

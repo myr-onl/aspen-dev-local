@@ -115,21 +115,6 @@ services:
       retries: 10
 
   # ---------------------------------------------------------------------------
-  # ADMINER — lightweight database GUI
-  # Access at http://localhost:8080
-  # Server: db  |  User/Password: from your .env  |  Database: aspen
-  # ---------------------------------------------------------------------------
-  adminer:
-    image: adminer:latest
-    restart: unless-stopped
-    ports:
-      - "${DB_GUI_PORT:-8080}:8080"
-    networks:
-      - aspendev
-    depends_on:
-      - db
-
-  # ---------------------------------------------------------------------------
   # SOLR — search index
   # Named volume so index data survives container restarts.
   # Admin UI at http://localhost:8983
