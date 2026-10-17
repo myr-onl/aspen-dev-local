@@ -42,6 +42,25 @@ sed -i 's/mv "\$source"\/\* "\$dest"\//cp -r "$source"\/* "$dest"\//' /start.sh
 echo "[DEV] Patched start.sh to preserve bind-mounted directories"
 
 # ---------------------------------------------------------------------------
+# Run a patched copy of createDirs.php
+# ---------------------------------------------------------------------------
+# createDirs.php runs `chmod -R 755` on code/web and sites/, which marks every
+# file in the bind-mounted repo executable (thousands of Git mode changes).
+# It lives in the bind mount, so we patch a copy in /tmp rather than the repo.
+# Capital X keeps directories traversable without making regular files executable.
+PATCH_DIR="/tmp/aspen-dev-patched"
+mkdir -p "$PATCH_DIR/scripts" "$PATCH_DIR/logger"
+cp /usr/local/aspen-discovery/docker/files/scripts/createDirs.php "$PATCH_DIR/scripts/"
+cp /usr/local/aspen-discovery/docker/files/logger/DockerLogger.php "$PATCH_DIR/logger/"
+sed -i -E "/aspenDir\/(code\/web|sites)/ s/'755'/'u=rwX,go=rX'/" "$PATCH_DIR/scripts/createDirs.php"
+if grep -q "u=rwX" "$PATCH_DIR/scripts/createDirs.php"; then
+    echo "[DEV] Using patched createDirs.php (no execute bit on repo files)"
+else
+    echo "[DEV] WARNING: createDirs.php patch did not apply; upstream script may have changed"
+fi
+sed -i "s#php createDirs.php#php $PATCH_DIR/scripts/createDirs.php#" /start.sh
+
+# ---------------------------------------------------------------------------
 # Hand off to the real Aspen entrypoint
 # ---------------------------------------------------------------------------
 exec /entrypoint.sh "$@"
